@@ -1,0 +1,5 @@
+# DMR 실시간 STT 추가 의존성
+# 기본 파인튜닝 의존성은 requirements_finetuning.txt 참조
+
+sounddevice>=0.4.6   # 실시간 오디오 캡처
+scipy>=1.10.0        # 8kHz→16kHz 업샘플링 (prepare_radio_data.py에서 필요 시)
