@@ -73,7 +73,8 @@ def main():
     print("   3. openai/whisper-small  (244M params, ~8GB VRAM) [추천]")
     print("   4. openai/whisper-medium (769M params, ~16GB VRAM)")
 
-    # 기본값: small 모델
+    # DMR 무전 음성용 모델 선택
+    # VRAM 4GB → whisper-base, 8GB → whisper-small (권장), 16GB → whisper-medium
     model_name = "openai/whisper-small"
     print(f"   ✓ 선택된 모델: {model_name}")
 
@@ -82,13 +83,15 @@ def main():
     # ========================================================================
     print("\n⚙️  4단계: 학습 설정")
 
-    # GPU 메모리에 맞게 조정하세요
+    # DMR 무전 음성 특화 하이퍼파라미터
+    # - learning_rate를 낮게 설정: 압축/노이즈 아티팩트 과적합 방지
+    # - OOM 발생 시: batch_size=2, fine_tune_whisper.py의 gradient_accumulation_steps=2
     hyperparameters = {
-        "num_epochs": 10,
-        "batch_size": 4,  # GPU 메모리 부족 시 2로 감소
-        "learning_rate": 1e-5,
-        "warmup_steps": 500,
-        "save_steps": 1000,
+        "num_epochs": 10,          # 데이터 300개 미만이면 5로 낮추기
+        "batch_size": 4,
+        "learning_rate": 5e-6,     # 무전 노이즈 과적합 방지 (기본 1e-5보다 낮게)
+        "warmup_steps": 200,
+        "save_steps": 500,
     }
 
     print(f"   - Epochs: {hyperparameters['num_epochs']}")
@@ -100,14 +103,14 @@ def main():
     # ========================================================================
     print("\n🚀 5단계: 파인튜닝 시작!")
     print("   (학습 중에는 TensorBoard로 모니터링 가능)")
-    print("   명령어: tensorboard --logdir ./whisper-finetuned-119/runs")
+    print("   명령어: tensorboard --logdir ./whisper-finetuned-dmr/runs")
     print()
 
     trainer = fine_tune_whisper(
         train_dataset=train_dataset,
         eval_dataset=test_dataset,
         model_name=model_name,
-        output_dir="./whisper-finetuned-119",
+        output_dir="./whisper-finetuned-dmr",
         **hyperparameters
     )
 
@@ -117,18 +120,10 @@ def main():
     print("\n" + "=" * 70)
     print("✅ 파인튜닝 완료!")
     print("=" * 70)
-    print(f"\n📁 모델 저장 위치: ./whisper-finetuned-119")
-    print("\n💡 모델 사용 방법:")
+    print(f"\n📁 모델 저장 위치: ./whisper-finetuned-dmr")
+    print("\n💡 실시간 STT 실행 방법:")
     print("   --------------------------------------------------")
-    print("   from transformers import pipeline")
-    print()
-    print("   pipe = pipeline(")
-    print('       "automatic-speech-recognition",')
-    print('       model="./whisper-finetuned-119"')
-    print("   )")
-    print()
-    print('   result = pipe("test_audio.wav")')
-    print('   print(result["text"])')
+    print("   python realtime_dmr_stt.py --model_path ./whisper-finetuned-dmr")
     print("   --------------------------------------------------")
 
 
